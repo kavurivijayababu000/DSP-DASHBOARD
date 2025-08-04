@@ -32,8 +32,8 @@ const DashboardPage: React.FC = () => {
         {
           id: '1',
           name: 'Active SDPOs',
-          value: 106,
-          target: 106,
+          value: 108,
+          target: 108,
           unit: 'officers',
           trend: 'stable' as const,
           change: 0

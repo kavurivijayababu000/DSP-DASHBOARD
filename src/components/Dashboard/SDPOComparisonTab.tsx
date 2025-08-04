@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { 
-  getAllDistricts, 
-  getSDPOsForDistrict, 
-  getRangeForDistrict, 
-  resolveUserJurisdictionToDistrict,
+import {
+  apPoliceStructure,
+  getAllDistricts,
   getAllRanges,
-  apPoliceStructure
-} from '../../services/policeDataService';
-
-interface SDPO {
+  getRangeForDistrict,
+  getSDPOsForDistrict,
+  resolveUserJurisdictionToDistrict,
+  getDistrictOverview,
+} from '../../services/policeDataService';interface SDPO {
   id: string;
   name: string;
   district: string;
@@ -52,6 +51,7 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
   const [sortBy, setSortBy] = useState('rank');
   const [filterGrade, setFilterGrade] = useState('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Guntur');
+  const [selectedRange, setSelectedRange] = useState<string>('Guntur Range');
 
   useEffect(() => {
     // Generate SDPO data using the corrected police data service
@@ -113,43 +113,42 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
           });
         });
       } else if (comparisonType === 'range-wise' && userRole === 'DGP') {
-        // Generate SDPOs range-wise
-        getAllRanges().forEach((rangeName) => {
-          const districtsInRange = rangeName.includes('Commissionerate') 
-            ? [rangeName.replace(' Commissionerate', '')] 
-            : apPoliceStructure.ranges[rangeName]?.districts || [];
+        // Generate SDPOs range-wise for the selected range
+        const targetRange = selectedRange;
+        const districtsInRange = targetRange.includes('Commissionerate') 
+          ? [targetRange.replace(' Commissionerate', '')] 
+          : apPoliceStructure.ranges[targetRange]?.districts || [];
 
-          districtsInRange.forEach(district => {
-            const locations = getSDPOsForDistrict(district);
-            locations.forEach((location, index) => {
-              const baseScore = Math.random() * 15 + 80;
+        districtsInRange.forEach(district => {
+          const locations = getSDPOsForDistrict(district);
+          locations.forEach((location, index) => {
+            const baseScore = Math.random() * 15 + 80;
 
-              allSDPOs.push({
-                id: `${district}-${index + 1}`,
-                name: `SDPO ${officerNames[nameIndex % officerNames.length]}`,
-                district: district,
-                range: rangeName,
-                jurisdiction: location.jurisdiction,
-                performance: { 
-                  rank: nameIndex + 1, 
-                  score: Math.round(baseScore * 10) / 10, 
-                  grade: getGrade(baseScore) 
-                },
-                metrics: {
-                  casesResolved: Math.round((Math.random() * 15 + 80) * 10) / 10,
-                  responseTime: Math.round((Math.random() * 3 + 6) * 10) / 10,
-                  citizenSatisfaction: Math.round((Math.random() * 1 + 4) * 10) / 10,
-                  inspections: Math.round(Math.random() * 200 + 500),
-                  communityMeetings: Math.round(Math.random() * 50 + 80)
-                },
-                trends: Array.from({ length: 6 }, (_, i) => ({
-                  month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
-                  score: Math.round((Math.random() * 10 + 80) * 10) / 10,
-                  cases: Math.round(Math.random() * 100 + 200)
-                }))
-              });
-              nameIndex++;
+            allSDPOs.push({
+              id: `${district}-${index + 1}`,
+              name: `SDPO ${officerNames[nameIndex % officerNames.length]}`,
+              district: district,
+              range: targetRange,
+              jurisdiction: location.jurisdiction,
+              performance: { 
+                rank: nameIndex + 1, 
+                score: Math.round(baseScore * 10) / 10, 
+                grade: getGrade(baseScore) 
+              },
+              metrics: {
+                casesResolved: Math.round((Math.random() * 15 + 80) * 10) / 10,
+                responseTime: Math.round((Math.random() * 3 + 6) * 10) / 10,
+                citizenSatisfaction: Math.round((Math.random() * 1 + 4) * 10) / 10,
+                inspections: Math.round(Math.random() * 200 + 500),
+                communityMeetings: Math.round(Math.random() * 50 + 80)
+              },
+              trends: Array.from({ length: 6 }, (_, i) => ({
+                month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+                score: Math.round((Math.random() * 10 + 80) * 10) / 10,
+                cases: Math.round(Math.random() * 100 + 200)
+              }))
             });
+            nameIndex++;
           });
         });
       } else if (comparisonType === 'district-wise' && userRole === 'DGP') {
@@ -246,7 +245,7 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
     };
 
     setSDPOs(generateSDPOs());
-  }, [userRole, userJurisdiction, comparisonType, selectedDistrict]);
+  }, [userRole, userJurisdiction, comparisonType, selectedDistrict, selectedRange]);
 
   // Filtered and sorted SDPOs
   const filteredSDPOs = sdpos
@@ -269,14 +268,6 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Data Accuracy Notice */}
-      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-        <h3 className="font-bold">✅ Data Corrected - Now using exact subdivision_list.txt structure</h3>
-        <p className="text-sm">All subdivision data has been corrected to match the official AP Police structure including:</p>
-        <p className="text-sm">• Kandukur moved from Prakasam to Nellore district</p>
-        <p className="text-sm">• All other subdivisions verified against subdivision_list.txt</p>
-      </div>
-
       {/* Controls */}
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <div className="flex flex-wrap gap-4">
@@ -328,6 +319,22 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
             >
               {getAllDistricts().map(district => (
                 <option key={district} value={district}>{district}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Range selector for DGP range-wise view */}
+        {comparisonType === 'range-wise' && userRole === 'DGP' && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Select Range:</label>
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {getAllRanges().map(range => (
+                <option key={range} value={range}>{range}</option>
               ))}
             </select>
           </div>

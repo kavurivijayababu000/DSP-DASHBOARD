@@ -197,7 +197,9 @@ export const districtSDPOData: DistrictSDPOData = {
     { jurisdiction: 'Srikalahasti', range: 'Ananthapuramu Range' },
     { jurisdiction: 'Puttur', range: 'Ananthapuramu Range' },
     { jurisdiction: 'Gudur', range: 'Ananthapuramu Range' },
-    { jurisdiction: 'Naidupeta', range: 'Ananthapuramu Range' }
+    { jurisdiction: 'Naidupeta', range: 'Ananthapuramu Range' },
+    { jurisdiction: 'Tirumala L&O', range: 'Ananthapuramu Range' },
+    { jurisdiction: 'Sricity', range: 'Ananthapuramu Range' }
   ],
 
   // COMMISSIONERATES
@@ -405,4 +407,51 @@ export const isValidDistrict = (district: string): boolean => {
  */
 export const getTotalSDPOCount = (): number => {
   return Object.values(districtSDPOData).reduce((total, sdpos) => total + sdpos.length, 0);
+};
+
+/**
+ * Get all SDPO jurisdictions for authentication
+ */
+export const getAllSDPOJurisdictions = (): string[] => {
+  const jurisdictions: string[] = [];
+  Object.values(districtSDPOData).forEach(sdpos => {
+    sdpos.forEach(sdpo => {
+      jurisdictions.push(sdpo.jurisdiction);
+    });
+  });
+  return jurisdictions.sort();
+};
+
+/**
+ * Authenticate SDPO by jurisdiction
+ */
+export const authenticateSDPO = (jurisdiction: string): { 
+  isValid: boolean; 
+  district?: string; 
+  range?: string; 
+} => {
+  for (const [district, sdpos] of Object.entries(districtSDPOData)) {
+    const foundSDPO = sdpos.find(sdpo => sdpo.jurisdiction === jurisdiction);
+    if (foundSDPO) {
+      return {
+        isValid: true,
+        district: district,
+        range: foundSDPO.range
+      };
+    }
+  }
+  return { isValid: false };
+};
+
+/**
+ * Get SDPO details by jurisdiction
+ */
+export const getSDPODetails = (jurisdiction: string): SDPOLocation | null => {
+  for (const sdpos of Object.values(districtSDPOData)) {
+    const foundSDPO = sdpos.find(sdpo => sdpo.jurisdiction === jurisdiction);
+    if (foundSDPO) {
+      return foundSDPO;
+    }
+  }
+  return null;
 };

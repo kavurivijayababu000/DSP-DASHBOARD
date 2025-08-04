@@ -46,7 +46,7 @@ const LoginPage: React.FC = () => {
     'Ananthapuramu': ['Anantapur Urban', 'Anantapur Rural', 'Guntakal', 'Kalyanadurgam', 'Tadipatri'],
     'Sri Satya Sai': ['Dharmavaram', 'Kadiri', 'Penukonda', 'Puttaparthi', 'Hindupur'],
     'Chittoor': ['Chittoor', 'Palamaner', 'Nagari', 'Kuppam'],
-    'Tirupati': ['Tirupati', 'Chandragiri', 'Renigunta', 'Srikalahasti', 'Puttur', 'Gudur', 'Naidupeta'],
+    'Tirupati': ['Tirupati', 'Chandragiri', 'Renigunta', 'Srikalahasti', 'Puttur', 'Gudur', 'Naidupeta', 'Tirumala L&O', 'Sricity'],
     'Visakhapatnam City': ['Visakha East', 'Dwaraka', 'Visakha North', 'Visakha Harbour', 'Visakha South', 'Visakha West'],
     'Vijayawada City': ['Vijayawada West', 'Vijayawada Central', 'Vijayawada North', 'Vijayawada South', 'Tiruvuru', 'Nandigama']
   };
