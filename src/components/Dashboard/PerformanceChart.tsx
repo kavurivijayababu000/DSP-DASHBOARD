@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { PerformanceData } from '../../store/slices/dashboardSlice';
 
@@ -6,7 +6,7 @@ interface PerformanceChartProps {
   data: PerformanceData[];
 }
 
-const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
+const PerformanceChart: React.FC<PerformanceChartProps> = memo(({ data: _data }) => {
   // Mock time series data for the chart
   const timeSeriesData = [
     { month: 'Jan', score: 85.2, cases: 234, resolved: 198 },
@@ -112,6 +112,8 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
       </div>
     </div>
   );
-};
+});
+
+PerformanceChart.displayName = 'PerformanceChart';
 
 export default PerformanceChart;

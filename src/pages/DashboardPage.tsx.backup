@@ -1,0 +1,1231 @@
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store/store';
+import { setKPIMetrics, setPerformanceData, PerformanceData } from '../store/slices/dashboardSlice';
+import KPICard from '../components/Dashboard/KPICard';
+import PerformanceChart from '../components/Dashboard/PerformanceChart';
+import RecentActivities from '../components/Dashboard/RecentActivities';
+import PerformanceTrackingTab from '../components/Dashboard/PerformanceTrackingTab';
+import SDPOComparisonTab from '../components/Dashboard/SDPOComparisonTab';
+import SDPODetailModal from '../components/Dashboard/SDPODetailModal';
+import CommunicationTab from '../components/Dashboard/CommunicationTab';
+import { 
+  getSDPOsForDistrict, 
+  resolveUserJurisdictionToDistrict,
+  getRangeForDistrict 
+} from '../services/policeDataService';
+import { APP_CONFIG, MOCK_OFFICER_NAMES } from '../constants';
+
+const DashboardPage: React.FC = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { kpiMetrics, performanceData } = useSelector((state: RootState) => state.dashboard);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [selectedSDPO, setSelectedSDPO] = useState<any>(null);
+  const [isSDPOModalOpen, setIsSDPOModalOpen] = useState(false);
+  const [comparisonSubTab, setComparisonSubTab] = useState('state-wide');
+  const [kpiSubTab, setKPISubTab] = useState('state-wide'); // Add KPI sub-tab state
+  const [performanceSubTab, setPerformanceSubTab] = useState('state-wide'); // Add Performance sub-tab state
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('all'); // Add district selection
+  const [selectedRange, setSelectedRange] = useState<string>('all'); // Add range selection
+  const [overviewSubTab, setOverviewSubTab] = useState('performance'); // Add Overview sub-tab state
+  const [crimeAnalysisTab, setCrimeAnalysisTab] = useState('registrations'); // Crime analysis internal tab
+  const [firstPeriod, setFirstPeriod] = useState('2024-Q1'); // First comparison period
+  const [secondPeriod, setSecondPeriod] = useState('2024-Q2'); // Second comparison period
+
+  // Static data moved outside useEffect for performance - using constants
+
+  useEffect(() => {
+    // Generate dynamic performance data based on user jurisdiction
+    const generatePerformanceData = () => {
+      // Role-specific KPI data based on jurisdiction and responsibility
+      let mockKPIs: any[] = [];
+      
+      if (user?.role === 'DGP') {
+        // DGP: State-wide metrics across all 26 districts and 106 SDPOs
+        mockKPIs = [
+          {
+            id: '1',
+            name: 'Active SDPOs Statewide',
+            value: 106,
+            target: 106,
+            unit: 'officers',
+            trend: 'stable' as const,
+            change: 0
+          },
+          {
+            id: '2',
+            name: 'State Crime Resolution',
+            value: 89.2,
+            target: 92,
+            unit: '%',
+            trend: 'up' as const,
+            change: 3.1
+          },
+          {
+            id: '3',
+            name: 'Avg Response Time (State)',
+            value: 7.8,
+            target: 8,
+            unit: 'minutes',
+            trend: 'down' as const,
+            change: -1.2
+          },
+          {
+            id: '4',
+            name: 'Public Satisfaction (AP)',
+            value: 4.4,
+            target: 4.5,
+            unit: '/5',
+            trend: 'up' as const,
+            change: 0.3
+          }
+        ];
+      } else if (user?.role === 'DIG') {
+        // DIG: Range-wide metrics across districts in their range
+        const rangeDistricts = user?.jurisdiction || 'Range';
+        mockKPIs = [
+          {
+            id: '1',
+            name: `${rangeDistricts} Range SDPOs`,
+            value: 18,
+            target: 20,
+            unit: 'officers',
+            trend: 'stable' as const,
+            change: 0
+          },
+          {
+            id: '2',
+            name: 'Range Crime Resolution',
+            value: 91.5,
+            target: 92,
+            unit: '%',
+            trend: 'up' as const,
+            change: 2.8
+          },
+          {
+            id: '3',
+            name: `${rangeDistricts} Response Time`,
+            value: 6.9,
+            target: 8,
+            unit: 'minutes',
+            trend: 'down' as const,
+            change: -1.8
+          },
+          {
+            id: '4',
+            name: 'Range Satisfaction',
+            value: 4.5,
+            target: 4.5,
+            unit: '/5',
+            trend: 'up' as const,
+            change: 0.4
+          }
+        ];
+      } else if (user?.role === 'SP') {
+        // SP: District-wide metrics for their specific district
+        const district = user?.jurisdiction || 'District';
+        mockKPIs = [
+          {
+            id: '1',
+            name: `${district} District SDPOs`,
+            value: 6,
+            target: 6,
+            unit: 'officers',
+            trend: 'stable' as const,
+            change: 0
+          },
+          {
+            id: '2',
+            name: 'District Crime Resolution',
+            value: 93.2,
+            target: 92,
+            unit: '%',
+            trend: 'up' as const,
+            change: 4.1
+          },
+          {
+            id: '3',
+            name: `${district} Response Time`,
+            value: 5.8,
+            target: 8,
+            unit: 'minutes',
+            trend: 'down' as const,
+            change: -2.3
+          },
+          {
+            id: '4',
+            name: 'District Satisfaction',
+            value: 4.6,
+            target: 4.5,
+            unit: '/5',
+            trend: 'up' as const,
+            change: 0.5
+          }
+        ];
+      } else if (user?.role === 'CP') {
+        // CP: Commissionerate-wide metrics (urban areas)
+        const commissionerate = user?.jurisdiction || 'City';
+        mockKPIs = [
+          {
+            id: '1',
+            name: `${commissionerate} SDPOs`,
+            value: 8,
+            target: 8,
+            unit: 'officers',
+            trend: 'stable' as const,
+            change: 0
+          },
+          {
+            id: '2',
+            name: 'City Crime Resolution',
+            value: 88.7,
+            target: 90,
+            unit: '%',
+            trend: 'up' as const,
+            change: 2.9
+          },
+          {
+            id: '3',
+            name: `${commissionerate} Response Time`,
+            value: 4.2,
+            target: 6,
+            unit: 'minutes',
+            trend: 'down' as const,
+            change: -1.8
+          },
+          {
+            id: '4',
+            name: 'Urban Satisfaction',
+            value: 4.3,
+            target: 4.5,
+            unit: '/5',
+            trend: 'up' as const,
+            change: 0.2
+          }
+        ];
+      } else {
+        // SDPO: Individual SDPO metrics for their subdivision
+        const subdivision = user?.jurisdiction || 'Subdivision';
+        mockKPIs = [
+          {
+            id: '1',
+            name: 'Active Cases',
+            value: 24,
+            target: 25,
+            unit: 'cases',
+            trend: 'stable' as const,
+            change: -1
+          },
+          {
+            id: '2',
+            name: `${subdivision} Resolution`,
+            value: 95.8,
+            target: 90,
+            unit: '%',
+            trend: 'up' as const,
+            change: 5.2
+          },
+          {
+            id: '3',
+            name: 'My Response Time',
+            value: 3.8,
+            target: 5,
+            unit: 'minutes',
+            trend: 'down' as const,
+            change: -2.1
+          },
+          {
+            id: '4',
+            name: 'Area Satisfaction',
+            value: 4.7,
+            target: 4.5,
+            unit: '/5',
+            trend: 'up' as const,
+            change: 0.6
+          }
+        ];
+      }
+
+      // Generate dynamic performance data based on user role and jurisdiction
+      let mockPerformance: any[] = [];
+
+      if (user?.role === 'SP' || user?.role === 'CP') {
+        // For SP/CP: Show only SDPOs from their jurisdiction
+        const targetDistrict = resolveUserJurisdictionToDistrict(user.jurisdiction || '', user.role as 'SP' | 'CP');
+        const sdpoLocations = getSDPOsForDistrict(targetDistrict);
+        const range = getRangeForDistrict(targetDistrict);
+
+        mockPerformance = sdpoLocations.map((location, index) => {
+          const baseScore = Math.random() * 15 + 80; // Score between 80-95
+          return {
+            sdpoId: `${targetDistrict}-${index + 1}`,
+            sdpoName: `${location.jurisdiction} SDPO`,
+            officerName: MOCK_OFFICER_NAMES[index % MOCK_OFFICER_NAMES.length],
+            district: targetDistrict,
+            range: range,
+            jurisdiction: location.jurisdiction,
+            metrics: mockKPIs,
+            rank: index + 1,
+            score: Math.round(baseScore * 10) / 10,
+            lastUpdated: new Date().toISOString()
+          };
+        }).sort((a, b) => b.score - a.score).map((item, index) => ({
+          ...item,
+          rank: index + 1
+        }));
+
+      } else if (user?.role === 'DGP') {
+        // For DGP: Show top performing SDPOs from across the state
+        mockPerformance = [
+          {
+            sdpoId: '1',
+            sdpoName: 'Guntur West SDPO',
+            officerName: 'Rajesh Kumar',
+            district: 'Guntur',
+            range: 'Guntur',
+            jurisdiction: 'Guntur West',
+            metrics: mockKPIs,
+            rank: 1,
+            score: 95.2,
+            lastUpdated: new Date().toISOString()
+          },
+          {
+            sdpoId: '2',
+            sdpoName: 'Vijayawada Central SDPO',
+            officerName: 'Priya Sharma',
+            district: 'Krishna',
+            range: 'Vijayawada',
+            jurisdiction: 'Vijayawada Central',
+            metrics: mockKPIs,
+            rank: 2,
+            score: 93.8,
+            lastUpdated: new Date().toISOString()
+          },
+          {
+            sdpoId: '3',
+            sdpoName: 'Visakhapatnam North SDPO',
+            officerName: 'Amit Singh',
+            district: 'Visakhapatnam',
+            range: 'Visakhapatnam',
+            jurisdiction: 'Visakhapatnam North',
+            metrics: mockKPIs,
+            rank: 3,
+            score: 92.1,
+            lastUpdated: new Date().toISOString()
+          }
+        ];
+      } else {
+        // Default fallback
+        mockPerformance = [
+          {
+            sdpoId: '1',
+            sdpoName: 'Default SDPO',
+            officerName: 'Officer Name',
+            district: 'District',
+            range: 'Range',
+            jurisdiction: 'Jurisdiction',
+            metrics: mockKPIs,
+            rank: 1,
+            score: 85.0,
+            lastUpdated: new Date().toISOString()
+          }
+        ];
+      }
+
+      return { mockKPIs, mockPerformance };
+    };
+
+    const { mockKPIs, mockPerformance } = generatePerformanceData();
+    dispatch(setKPIMetrics(mockKPIs));
+    dispatch(setPerformanceData(mockPerformance));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, user?.role, user?.jurisdiction]);
+
+  const handleSDPOSelect = (sdpo: any) => {
+    setSelectedSDPO(sdpo);
+    setIsSDPOModalOpen(true);
+  };
+
+  const handleRangeChange = (rangeId: string) => {
+    setSelectedRange(rangeId);
+    // Reset district selection when range changes
+    setSelectedDistrict('all');
+  };
+
+  const handleDistrictChange = (districtId: string) => {
+    setSelectedDistrict(districtId);
+  };
+
+  const getSelectionTitle = () => {
+    if (selectedDistrict !== 'all') {
+      const district = getAvailableDistricts().find(d => d.id === selectedDistrict);
+      return `${district?.name} District SDPOs`;
+    } else if (selectedRange !== 'all') {
+      const range = getAvailableRanges().find(r => r.id === selectedRange);
+      return `${range?.name} SDPOs`;
+    }
+    return 'All State SDPOs';
+  };
+
+  const getComparisonSubTabs = () => {
+    if (user?.role === 'DGP') {
+      return [
+        { id: 'state-wide', label: 'State-wide Performance', icon: '🏛️' },
+        { id: 'range-wise', label: 'Range-wise Comparison', icon: '📍' },
+        { id: 'district-wise', label: 'District-wise Comparison', icon: '🏙️' }
+      ];
+    }
+    return [];
+  };
+
+  const getKPISubTabs = () => {
+    if (user?.role === 'DGP') {
+      return [
+        { id: 'state-wide', label: 'State-wide KPIs', icon: '🏛️' },
+        { id: 'range-wise', label: 'Range-wise Analysis', icon: '📍' },
+        { id: 'district-wise', label: 'District-wise KPIs', icon: '🏙️' }
+      ];
+    } else if (user?.role === 'DIG') {
+      return [
+        { id: 'range-wide', label: 'Range Overview', icon: '📍' },
+        { id: 'district-wise', label: 'Districts in Range', icon: '🏙️' }
+      ];
+    } else if (user?.role === 'SP' || user?.role === 'CP') {
+      return [
+        { id: 'district-wide', label: 'District Overview', icon: '🏙️' },
+        { id: 'sdpo-wise', label: 'SDPO Performance', icon: '👮' }
+      ];
+    }
+    return [];
+  };
+
+  const getAvailableRanges = () => {
+    return [
+      { id: 'all', name: 'All Ranges' },
+      { id: 'visakhapatnam', name: 'Visakhapatnam Range' },
+      { id: 'vijayawada', name: 'Vijayawada Range' },
+      { id: 'tirupati', name: 'Tirupati Range' },
+      { id: 'guntur', name: 'Guntur Range' },
+      { id: 'kurnool', name: 'Kurnool Range' },
+      { id: 'anantapur', name: 'Anantapur Range' }
+    ];
+  };
+
+  const getAvailableDistricts = () => {
+    return [
+      { id: 'all', name: 'All Districts', range: 'all' },
+      // Visakhapatnam Range
+      { id: 'visakhapatnam', name: 'Visakhapatnam', range: 'visakhapatnam' },
+      { id: 'vizianagaram', name: 'Vizianagaram', range: 'visakhapatnam' },
+      { id: 'srikakulam', name: 'Srikakulam', range: 'visakhapatnam' },
+      { id: 'east-godavari', name: 'East Godavari', range: 'visakhapatnam' },
+      { id: 'west-godavari', name: 'West Godavari', range: 'visakhapatnam' },
+      // Vijayawada Range
+      { id: 'krishna', name: 'Krishna', range: 'vijayawada' },
+      { id: 'guntur', name: 'Guntur', range: 'vijayawada' },
+      { id: 'prakasam', name: 'Prakasam', range: 'vijayawada' },
+      { id: 'nellore', name: 'Nellore', range: 'vijayawada' },
+      // Tirupati Range
+      { id: 'chittoor', name: 'Chittoor', range: 'tirupati' },
+      { id: 'kadapa', name: 'Kadapa', range: 'tirupati' },
+      // Guntur Range
+      { id: 'guntur-rural', name: 'Guntur Rural', range: 'guntur' },
+      // Kurnool Range
+      { id: 'kurnool', name: 'Kurnool', range: 'kurnool' },
+      // Anantapur Range
+      { id: 'anantapur', name: 'Anantapur', range: 'anantapur' }
+    ];
+  };
+
+  const getFilteredDistricts = () => {
+    const allDistricts = getAvailableDistricts();
+    if (selectedRange === 'all') {
+      return allDistricts;
+    }
+    return allDistricts.filter(district => district.range === selectedRange || district.id === 'all');
+  };
+
+  const getPerformanceSubTabs = () => {
+    if (user?.role === 'DGP') {
+      return [
+        { id: 'state-wide', label: 'All SDPOs', icon: '🏛️' },
+        { id: 'range-wise', label: 'By Range', icon: '📍' },
+        { id: 'district-wise', label: 'By District', icon: '🏙️' }
+      ];
+    } else if (user?.role === 'DIG') {
+      return [
+        { id: 'range-wide', label: 'Range SDPOs', icon: '📍' },
+        { id: 'district-wise', label: 'By District', icon: '🏙️' }
+      ];
+    } else if (user?.role === 'SP' || user?.role === 'CP') {
+      return [
+        { id: 'district-wide', label: 'District SDPOs', icon: '🏙️' },
+        { id: 'performance-wise', label: 'By Performance', icon: '📊' }
+      ];
+    }
+    return [];
+  };
+
+  const getOverviewSubTabs = () => {
+    if (user?.role === 'DGP') {
+      return [
+        { id: 'performance', label: 'Performance Overview', icon: '📊' },
+        { id: 'crime-analysis', label: 'State Overall Crime', icon: '🔍' }
+      ];
+    }
+    return [];
+  };
+
+  const getCrimeAnalysisTabs = () => {
+    return [
+      { id: 'registrations', label: 'Overall Crime Registrations', icon: '📝' },
+      { id: 'chargesheet', label: 'Charge Sheet Status', icon: '⚖️' }
+    ];
+  };
+
+  const getAvailablePeriods = () => {
+    return [
+      { id: '2024-Q1', label: '2024 Q1 (Jan-Mar)' },
+      { id: '2024-Q2', label: '2024 Q2 (Apr-Jun)' },
+      { id: '2024-Q3', label: '2024 Q3 (Jul-Sep)' },
+      { id: '2024-Q4', label: '2024 Q4 (Oct-Dec)' },
+      { id: '2023-Q1', label: '2023 Q1 (Jan-Mar)' },
+      { id: '2023-Q2', label: '2023 Q2 (Apr-Jun)' },
+      { id: '2023-Q3', label: '2023 Q3 (Jul-Sep)' },
+      { id: '2023-Q4', label: '2023 Q4 (Oct-Dec)' }
+    ];
+  };
+
+  const generateCrimeData = () => {
+    const allDistricts = [
+      'Srikakulam', 'Vizianagaram', 'PVP Manyam', 'Alluri Seetha Rama Raju', 'Anakapalli',
+      'Kakinada', 'Dr. B.R. Ambedkar Konaseema', 'East Godavari', 'West Godavari', 'Eluru', 'Krishna',
+      'Guntur', 'Palnadu', 'Bapatla', 'Prakasam', 'Nellore',
+      'Kurnool', 'Nandyal', 'YSR Kadapa', 'Annamayya',
+      'Ananthapuramu', 'Sri Satya Sai', 'Chittoor', 'Tirupati',
+      'Visakhapatnam City', 'Vijayawada City'
+    ];
+
+    const crimeData = allDistricts.map(district => {
+      const baseRegistrations = Math.floor(Math.random() * 500) + 200;
+      const baseChargeSheets = Math.floor(Math.random() * 300) + 100;
+      
+      const firstPeriodRegistrations = baseRegistrations + Math.floor(Math.random() * 100) - 50;
+      const secondPeriodRegistrations = baseRegistrations + Math.floor(Math.random() * 100) - 50;
+      const registrationsGrowth = ((secondPeriodRegistrations - firstPeriodRegistrations) / firstPeriodRegistrations * 100);
+
+      const firstPeriodChargeSheets = baseChargeSheets + Math.floor(Math.random() * 50) - 25;
+      const secondPeriodChargeSheets = baseChargeSheets + Math.floor(Math.random() * 50) - 25;
+      const chargeSheetsGrowth = ((secondPeriodChargeSheets - firstPeriodChargeSheets) / firstPeriodChargeSheets * 100);
+
+      return {
+        district,
+        registrations: {
+          firstPeriod: firstPeriodRegistrations,
+          secondPeriod: secondPeriodRegistrations,
+          growth: Math.round(registrationsGrowth * 10) / 10
+        },
+        chargeSheets: {
+          firstPeriod: firstPeriodChargeSheets,
+          secondPeriod: secondPeriodChargeSheets,
+          growth: Math.round(chargeSheetsGrowth * 10) / 10
+        }
+      };
+    });
+
+    return crimeData;
+  };
+
+  const getTabs = () => {
+    const baseTabs: Array<{ id: string; label: string; icon: string }> = [
+      { id: APP_CONFIG.DASHBOARD_TABS.OVERVIEW, label: 'Overview', icon: '📊' },
+    ];
+
+    // Add KPIs & Metrics tab for all roles
+    baseTabs.push({ id: APP_CONFIG.DASHBOARD_TABS.KPIS, label: 'KPIs & Metrics', icon: '📈' });
+
+    // Add Performance Tracking tab for all roles
+    baseTabs.push({ id: APP_CONFIG.DASHBOARD_TABS.PERFORMANCE_TRACKING, label: 'Performance Tracking', icon: '📋' });
+
+    if (user?.role === APP_CONFIG.ROLES.SP || user?.role === APP_CONFIG.ROLES.DGP || user?.role === APP_CONFIG.ROLES.DIG || user?.role === APP_CONFIG.ROLES.CP) {
+      baseTabs.push({ id: APP_CONFIG.DASHBOARD_TABS.COMPARISON, label: 'SDPO Comparison', icon: '�' });
+    }
+
+    // Add Communication tab for DGP
+    if (user?.role === APP_CONFIG.ROLES.DGP) {
+      baseTabs.push({ id: APP_CONFIG.DASHBOARD_TABS.COMMUNICATION, label: 'Communication', icon: '📞' });
+    }
+
+    // Add Recent Activities tab
+    baseTabs.push({ id: APP_CONFIG.DASHBOARD_TABS.ACTIVITIES, label: 'Recent Activities', icon: '⚡' });
+
+    return baseTabs;
+  };
+
+  const getRoleDashboardTitle = () => {
+    switch (user?.role) {
+      case 'DGP':
+        return 'State Command Center';
+      case 'DIG':
+        return `${user.jurisdiction} Range Dashboard`;
+      case 'SP':
+        return `${user.jurisdiction} District Dashboard`;
+      case 'CP':
+        return `${user.jurisdiction} Commissionerate Dashboard`;
+      case 'SDPO':
+        return `${user.jurisdiction} Performance Dashboard`;
+      default:
+        return 'Dashboard';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {getRoleDashboardTitle()}
+          </h1>
+          <p className="text-gray-600">
+            Real-time monitoring and performance analytics
+          </p>
+        </div>
+        <div className="flex space-x-3 mt-4 sm:mt-0">
+          <button className="bg-ap-blue-600 text-white px-4 py-2 rounded-lg hover:bg-ap-blue-700">
+            📊 Generate Report
+          </button>
+          <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+            🔄 Refresh Data
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {getTabs().map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                activeTab === tab.id
+                  ? 'border-ap-blue-500 text-ap-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div>
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.OVERVIEW && (
+          <div className="space-y-6">
+            {/* Overview Sub-tabs for DGP */}
+            {getOverviewSubTabs().length > 0 && (
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  {getOverviewSubTabs().map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setOverviewSubTab(subTab.id)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                        overviewSubTab === subTab.id
+                          ? 'border-ap-blue-500 text-ap-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* Performance Overview Content */}
+            {(!user?.role || user?.role !== 'DGP' || overviewSubTab === 'performance') && (
+              <>
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {kpiMetrics.map((kpi) => (
+                    <KPICard key={kpi.id} kpi={kpi} />
+                  ))}
+                </div>
+
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Performance Chart */}
+                  <div className="lg:col-span-2">
+                    <PerformanceChart data={performanceData} />
+                  </div>
+
+                  {/* Recent Activities */}
+                  <div>
+                    <RecentActivities />
+                  </div>
+                </div>
+
+                {/* Performance Rankings */}
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Performance Rankings 
+                      {user?.role === 'SP' || user?.role === 'CP' ? (
+                        <span className="text-sm text-gray-600 ml-2">
+                          ({user.jurisdiction} District)
+                        </span>
+                      ) : user?.role === 'DGP' ? (
+                        <span className="text-sm text-gray-600 ml-2">
+                          (State-wide Top Performers)
+                        </span>
+                      ) : null}
+                    </h3>
+                    <div className="space-y-3">
+                      {(performanceData || []).slice(0, 5).map((sdpo: any, index: number) => (
+                        <div key={sdpo.sdpoId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${
+                              index === 0 ? 'bg-ap-gold-400 text-white' : 
+                              index === 1 ? 'bg-gray-400 text-white' :
+                              index === 2 ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="font-medium">{sdpo.sdpoName}</p>
+                              <p className="text-sm text-gray-600">
+                                {sdpo.officerName && `${sdpo.officerName} • `}
+                                {sdpo.jurisdiction || sdpo.district}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-ap-blue-600">{sdpo.score}%</p>
+                            <p className="text-xs text-gray-500">Score</p>
+                          </div>
+                        </div>
+                      ))}
+                      {(!performanceData || performanceData.length === 0) && (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>No performance data available</p>
+                          <p className="text-sm">Please check your jurisdiction settings</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Crime Analysis Content */}
+            {user?.role === 'DGP' && overviewSubTab === 'crime-analysis' && (
+              <>
+                {/* Crime Analysis Header */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">State Overall Crime Analysis</h2>
+                      <p className="text-gray-600 mt-1">
+                        Compare crime statistics across all districts between selected periods
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Period Selection */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Select Comparison Periods</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="first-period" className="block text-sm font-medium text-gray-700 mb-2">
+                        First Period
+                      </label>
+                      <select
+                        id="first-period"
+                        value={firstPeriod}
+                        onChange={(e) => setFirstPeriod(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-ap-blue-500 focus:border-ap-blue-500"
+                      >
+                        {getAvailablePeriods().map((period) => (
+                          <option key={period.id} value={period.id}>
+                            {period.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="second-period" className="block text-sm font-medium text-gray-700 mb-2">
+                        Second Period
+                      </label>
+                      <select
+                        id="second-period"
+                        value={secondPeriod}
+                        onChange={(e) => setSecondPeriod(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-ap-blue-500 focus:border-ap-blue-500"
+                      >
+                        {getAvailablePeriods().map((period) => (
+                          <option key={period.id} value={period.id}>
+                            {period.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-medium">Comparing:</span> {getAvailablePeriods().find(p => p.id === firstPeriod)?.label} 
+                      {' vs '} {getAvailablePeriods().find(p => p.id === secondPeriod)?.label}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Crime Analysis Internal Tabs */}
+                <div className="border-b border-gray-200">
+                  <nav className="-mb-px flex space-x-8">
+                    {getCrimeAnalysisTabs().map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setCrimeAnalysisTab(tab.id)}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                          crimeAnalysisTab === tab.id
+                            ? 'border-ap-blue-500 text-ap-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+
+                {/* Crime Data Table */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold">
+                      {crimeAnalysisTab === 'registrations' ? 'FIR Registrations Comparison' : 'Charge Sheet Filing Comparison'}
+                    </h3>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            District Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {crimeAnalysisTab === 'registrations' ? 'FIRs' : 'Charge Sheets'} - {getAvailablePeriods().find(p => p.id === firstPeriod)?.label}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {crimeAnalysisTab === 'registrations' ? 'FIRs' : 'Charge Sheets'} - {getAvailablePeriods().find(p => p.id === secondPeriod)?.label}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Growth %
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {generateCrimeData().map((districtData) => {
+                          const data = crimeAnalysisTab === 'registrations' ? districtData.registrations : districtData.chargeSheets;
+                          return (
+                            <tr key={districtData.district} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {districtData.district}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {data.firstPeriod.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {data.secondPeriod.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  data.growth > 0 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : data.growth < 0 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {data.growth > 0 ? '↑' : data.growth < 0 ? '↓' : '→'} {Math.abs(data.growth)}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Summary Statistics */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Summary Statistics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {(() => {
+                      const crimeData = generateCrimeData();
+                      const currentData = crimeAnalysisTab === 'registrations' 
+                        ? crimeData.map(d => d.registrations) 
+                        : crimeData.map(d => d.chargeSheets);
+                      
+                      const totalFirst = currentData.reduce((sum, d) => sum + d.firstPeriod, 0);
+                      const totalSecond = currentData.reduce((sum, d) => sum + d.secondPeriod, 0);
+                      const overallGrowth = ((totalSecond - totalFirst) / totalFirst * 100);
+                      const districtsIncreased = currentData.filter(d => d.growth > 0).length;
+                      const avgGrowth = currentData.reduce((sum, d) => sum + d.growth, 0) / currentData.length;
+
+                      return (
+                        <>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-ap-blue-600">
+                              {totalSecond.toLocaleString()}
+                            </p>
+                            <p className="text-sm text-gray-600">Latest Period Total</p>
+                          </div>
+                          <div className="text-center">
+                            <p className={`text-2xl font-bold ${overallGrowth > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {overallGrowth > 0 ? '+' : ''}{Math.round(overallGrowth * 10) / 10}%
+                            </p>
+                            <p className="text-sm text-gray-600">Overall Growth</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-orange-600">
+                              {districtsIncreased}
+                            </p>
+                            <p className="text-sm text-gray-600">Districts Increased</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-purple-600">
+                              {Math.round(avgGrowth * 10) / 10}%
+                            </p>
+                            <p className="text-sm text-gray-600">Average Growth</p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.KPIS && (
+          <div className="space-y-6">
+            {/* KPIs Header */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Key Performance Indicators</h2>
+                  <p className="text-gray-600 mt-1">
+                    {user?.role === 'DGP' ? 'State-wide performance metrics across all districts' :
+                     user?.role === 'DIG' ? `Range-wide metrics for ${user?.jurisdiction} Range` :
+                     user?.role === 'SP' ? `District-wide metrics for ${user?.jurisdiction} District` :
+                     user?.role === 'CP' ? `Commissionerate metrics for ${user?.jurisdiction}` :
+                     'Individual SDPO performance metrics'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Last Updated</div>
+                  <div className="font-medium">{new Date().toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI Sub-tabs */}
+            {getKPISubTabs().length > 0 && (
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  {getKPISubTabs().map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setKPISubTab(subTab.id)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                        kpiSubTab === subTab.id
+                          ? 'border-ap-blue-500 text-ap-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* DGP Selection Interface for State-wide */}
+            {user?.role === 'DGP' && kpiSubTab === 'state-wide' && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Filter by Jurisdiction</h3>
+                  <div className="flex items-center space-x-4">
+                    {/* Range Selection */}
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="range-select" className="text-sm font-medium text-gray-700">
+                        Range:
+                      </label>
+                      <select
+                        id="range-select"
+                        value={selectedRange}
+                        onChange={(e) => handleRangeChange(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-ap-blue-500 focus:border-ap-blue-500"
+                      >
+                        {getAvailableRanges().map((range) => (
+                          <option key={range.id} value={range.id}>
+                            {range.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* District Selection */}
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="district-select" className="text-sm font-medium text-gray-700">
+                        District:
+                      </label>
+                      <select
+                        id="district-select"
+                        value={selectedDistrict}
+                        onChange={(e) => handleDistrictChange(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-ap-blue-500 focus:border-ap-blue-500"
+                      >
+                        {getFilteredDistricts().map((district) => (
+                          <option key={district.id} value={district.id}>
+                            {district.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    <button
+                      onClick={() => {
+                        setSelectedRange('all');
+                        setSelectedDistrict('all');
+                      }}
+                      className="px-4 py-2 text-sm bg-gray-100 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+                    >
+                      Reset All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">Current Selection:</span> {getSelectionTitle()}
+                    {selectedRange !== 'all' && selectedDistrict === 'all' && 
+                      ` (${getFilteredDistricts().length - 1} districts)`
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* KPIs Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {kpiMetrics.map((kpi) => (
+                <KPICard key={kpi.id} kpi={kpi} />
+              ))}
+            </div>
+
+            {/* SDPO Details Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                SDPO Performance Details - {kpiSubTab === 'state-wide' ? getSelectionTitle() : 
+                                          kpiSubTab === 'range-wise' ? 'By Range' : 
+                                          kpiSubTab === 'district-wise' ? 'By District' : 'Overview'}
+              </h3>
+              
+              <SDPOComparisonTab 
+                userRole={user?.role} 
+                userJurisdiction={user?.role === 'DGP' && kpiSubTab === 'state-wide' ? 
+                  (selectedDistrict !== 'all' ? selectedDistrict : selectedRange) : user?.jurisdiction} 
+                comparisonType={kpiSubTab}
+                selectedRange={selectedRange}
+                selectedDistrict={selectedDistrict}
+                onSDPOSelect={handleSDPOSelect} 
+              />
+            </div>
+
+            {/* Performance Chart */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">Performance Trends</h3>
+              <PerformanceChart data={performanceData || []} />
+            </div>
+
+            {/* Additional Analytics for DGP */}
+            {user?.role === 'DGP' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Range-wise Performance Summary</h3>
+                  <div className="space-y-3">
+                    {['Visakhapatnam Range', 'Vijayawada Range', 'Tirupati Range', 'Guntur Range'].map((range, index) => (
+                      <div key={range} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                           onClick={() => setKPISubTab('range-wise')}>
+                        <span className="font-medium">{range}</span>
+                        <span className="text-ap-blue-600 font-semibold">{90 + index * 2}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Critical Metrics Alert</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <span className="text-green-600">✅</span>
+                      <div>
+                        <p className="font-medium text-green-800">Response Time Target Met</p>
+                        <p className="text-sm text-green-600">95% districts under 8 minutes</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <span className="text-yellow-600">⚠️</span>
+                      <div>
+                        <p className="font-medium text-yellow-800">Crime Resolution Rate</p>
+                        <p className="text-sm text-yellow-600">3 districts below 90% target</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.PERFORMANCE_TRACKING && (
+          <div className="space-y-6">
+            {/* Performance Tracking Header */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Performance Tracking System</h2>
+                  <p className="text-gray-600 mt-1">
+                    Monitor SDPO performance across standardized formats with document support
+                  </p>
+                </div>
+                {user?.role !== 'SDPO' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Superior Officer View:</strong> View all SDPO performance data under your jurisdiction
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Performance Sub-tabs */}
+            {getPerformanceSubTabs().length > 0 && (
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  {getPerformanceSubTabs().map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setPerformanceSubTab(subTab.id)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                        performanceSubTab === subTab.id
+                          ? 'border-ap-blue-500 text-ap-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* Performance Tracking Content */}
+            <PerformanceTrackingTab userRole={user?.role} userId={user?.id} />
+
+            {/* SDPO Performance Details */}
+            {(user?.role === 'DGP' || user?.role === 'DIG' || user?.role === 'SP' || user?.role === 'CP') && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  SDPO Performance Details - {performanceSubTab === 'state-wide' ? 'All SDPOs' : 
+                                            performanceSubTab === 'range-wise' ? 'By Range' : 
+                                            performanceSubTab === 'district-wise' ? 'By District' : 'Overview'}
+                </h3>
+                
+                <SDPOComparisonTab 
+                  userRole={user?.role} 
+                  userJurisdiction={user?.jurisdiction} 
+                  comparisonType={performanceSubTab}
+                  onSDPOSelect={handleSDPOSelect} 
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.COMPARISON && (
+          <div className="space-y-6">
+            {/* DGP Sub-tabs */}
+            {user?.role === 'DGP' && (
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  {getComparisonSubTabs().map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setComparisonSubTab(subTab.id)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                        comparisonSubTab === subTab.id
+                          ? 'border-ap-blue-500 text-ap-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
+            
+            {/* Comparison Content */}
+            <SDPOComparisonTab 
+              userRole={user?.role} 
+              userJurisdiction={user?.jurisdiction} 
+              comparisonType={user?.role === 'DGP' ? comparisonSubTab : 'default'}
+              onSDPOSelect={handleSDPOSelect} 
+            />
+          </div>
+        )}
+
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.COMMUNICATION && user?.role === 'DGP' && (
+          <CommunicationTab 
+            userRole={user?.role} 
+            userId={user?.id || 'dgp-001'} 
+          />
+        )}
+
+        {activeTab === APP_CONFIG.DASHBOARD_TABS.ACTIVITIES && (
+          <RecentActivities />
+        )}
+      </div>
+
+      {/* SDPO Detail Modal */}
+      {isSDPOModalOpen && selectedSDPO && (
+        <SDPODetailModal
+          sdpo={selectedSDPO}
+          isOpen={isSDPOModalOpen}
+          onClose={() => {
+            setIsSDPOModalOpen(false);
+            setSelectedSDPO(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default DashboardPage;

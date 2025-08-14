@@ -7,7 +7,6 @@ import {
   getRangeForDistrict,
   getSDPOsForDistrict,
   resolveUserJurisdictionToDistrict,
-  getDistrictOverview,
 } from '../../services/policeDataService';interface SDPO {
   id: string;
   name: string;
@@ -187,58 +186,141 @@ const SDPOComparisonTab: React.FC<SDPOComparisonTabProps> = ({
           });
         }
       } else {
-        // Default behavior for SP/CP roles - show specific district/commissionerate
+        // Default behavior for SP/CP/DIG roles - show specific jurisdiction
         let targetDistrict = 'Guntur'; // Default
+        let allSDPOs: SDPO[] = [];
         
-        if ((userRole === 'SP' || userRole === 'CP') && userJurisdiction) {
-          // Use the corrected service function to resolve jurisdiction to district
-          targetDistrict = resolveUserJurisdictionToDistrict(userJurisdiction, userRole as 'SP' | 'CP');
+        if ((userRole === 'SP' || userRole === 'CP' || userRole === 'DIG') && userJurisdiction) {
+          if (userRole === 'DIG') {
+            // DIG sees all districts in their range
+            const rangeName = userJurisdiction.replace(' Range', '').trim();
+            
+            // Get all districts in this range using the service function
+            const rangeDistricts = getAllDistricts().filter(district => {
+              const districtRange = getRangeForDistrict(district);
+              return districtRange && districtRange.toLowerCase().includes(rangeName.toLowerCase());
+            });
+            
+            console.log('🎯 DIG Login Analysis:');
+            console.log(`   👤 User Role: ${userRole}`);
+            console.log(`   📍 Range Jurisdiction: "${userJurisdiction}"`);
+            console.log(`   🎯 Districts in Range: ${rangeDistricts.length} districts`);
+            console.log(`   📊 District List:`, rangeDistricts);
+            
+            // Generate SDPOs for all districts in the DIG's range
+            rangeDistricts.forEach(district => {
+              const districtData = getSDPOsForDistrict(district);
+              const districtSDPOs = districtData.map((location, index) => {
+                const baseScore = Math.random() * 20 + 75;
+                const globalIndex = allSDPOs.length + index;
+                
+                return {
+                  id: `${district}-${index + 1}`,
+                  name: `SDPO ${officerNames[globalIndex % officerNames.length]}`,
+                  district: district,
+                  range: location.range,
+                  jurisdiction: location.jurisdiction,
+                  performance: { 
+                    rank: globalIndex + 1, 
+                    score: Math.round(baseScore * 10) / 10, 
+                    grade: getGrade(baseScore) 
+                  },
+                  metrics: {
+                    casesResolved: Math.round((Math.random() * 20 + 75) * 10) / 10,
+                    responseTime: Math.round((Math.random() * 5 + 5) * 10) / 10,
+                    citizenSatisfaction: Math.round((Math.random() * 1.5 + 3.5) * 10) / 10,
+                    inspections: Math.round(Math.random() * 50 + 100),
+                    communityMeetings: Math.round(Math.random() * 20 + 10)
+                  },
+                  trends: Array.from({ length: 6 }, (_, i) => ({
+                    month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+                    score: Math.round((Math.random() * 10 + 80) * 10) / 10,
+                    cases: Math.round(Math.random() * 80 + 150)
+                  }))
+                };
+              });
+              allSDPOs.push(...districtSDPOs);
+            });
+          } else {
+            // SP/CP logic - single district
+            targetDistrict = resolveUserJurisdictionToDistrict(userJurisdiction, userRole as 'SP' | 'CP');
+            const districtData = getSDPOsForDistrict(targetDistrict);
+            
+            // Enhanced debug logging for SP/CP jurisdiction resolution with CORRECTED data
+            console.log('🎯 SP/CP Login Analysis (CORRECTED subdivision_list.txt data):');
+            console.log(`   👤 User Role: ${userRole}`);
+            console.log(`   📍 Raw Jurisdiction: "${userJurisdiction}"`);
+            console.log(`   🎯 Resolved District: "${targetDistrict}"`);
+            console.log(`   📊 SDPO Count: ${districtData.length}`);
+            console.log(`   🗺️ SDPO Details:`, districtData.map(d => d.jurisdiction));
+            console.log(`   📋 Range: ${getRangeForDistrict(targetDistrict)}`);
+            
+            if (districtData.length === 0) {
+              console.warn(`⚠️  WARNING: No SDPO data found for district: ${targetDistrict}`);
+              console.log(`🔧 Available districts:`, getAllDistricts());
+            }
+
+            allSDPOs = districtData.map((location, index) => {
+              const baseScore = Math.random() * 20 + 75;
+
+              return {
+                id: (index + 1).toString(),
+                name: `SDPO ${officerNames[index % officerNames.length]}`,
+                district: targetDistrict,
+                range: location.range,
+                jurisdiction: location.jurisdiction,
+                performance: { 
+                  rank: index + 1, 
+                  score: Math.round(baseScore * 10) / 10, 
+                  grade: getGrade(baseScore) 
+                },
+                metrics: {
+                  casesResolved: Math.round((Math.random() * 20 + 75) * 10) / 10,
+                  responseTime: Math.round((Math.random() * 5 + 5) * 10) / 10,
+                  citizenSatisfaction: Math.round((Math.random() * 1.5 + 3.5) * 10) / 10,
+                  inspections: Math.round(Math.random() * 50 + 100),
+                  communityMeetings: Math.round(Math.random() * 20 + 10)
+                },
+                trends: Array.from({ length: 6 }, (_, i) => ({
+                  month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+                  score: Math.round((Math.random() * 10 + 80) * 10) / 10,
+                  cases: Math.round(Math.random() * 80 + 150)
+                }))
+              };
+            });
+          }
+        } else {
+          // Default case - use existing logic for other roles
+          targetDistrict = 'Guntur';
+          const districtData = getSDPOsForDistrict(targetDistrict);
+          allSDPOs = districtData.map((location, index) => {
+            const baseScore = Math.random() * 20 + 75;
+            return {
+              id: (index + 1).toString(),
+              name: `SDPO ${officerNames[index % officerNames.length]}`,
+              district: targetDistrict,
+              range: location.range,
+              jurisdiction: location.jurisdiction,
+              performance: { 
+                rank: index + 1, 
+                score: Math.round(baseScore * 10) / 10, 
+                grade: getGrade(baseScore) 
+              },
+              metrics: {
+                casesResolved: Math.round((Math.random() * 20 + 75) * 10) / 10,
+                responseTime: Math.round((Math.random() * 5 + 5) * 10) / 10,
+                citizenSatisfaction: Math.round((Math.random() * 1.5 + 3.5) * 10) / 10,
+                inspections: Math.round(Math.random() * 50 + 100),
+                communityMeetings: Math.round(Math.random() * 20 + 10)
+              },
+              trends: Array.from({ length: 6 }, (_, i) => ({
+                month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+                score: Math.round((Math.random() * 10 + 80) * 10) / 10,
+                cases: Math.round(Math.random() * 80 + 150)
+              }))
+            };
+          });
         }
-
-        const districtData = getSDPOsForDistrict(targetDistrict);
-        
-        // Enhanced debug logging for SP/CP jurisdiction resolution with CORRECTED data
-        console.log('🎯 SP/CP Login Analysis (CORRECTED subdivision_list.txt data):');
-        console.log(`   👤 User Role: ${userRole}`);
-        console.log(`   📍 Raw Jurisdiction: "${userJurisdiction}"`);
-        console.log(`   🎯 Resolved District: "${targetDistrict}"`);
-        console.log(`   📊 SDPO Count: ${districtData.length}`);
-        console.log(`   🗺️ SDPO Details:`, districtData.map(d => d.jurisdiction));
-        console.log(`   📋 Range: ${getRangeForDistrict(targetDistrict)}`);
-        
-        if (districtData.length === 0) {
-          console.warn(`⚠️  WARNING: No SDPO data found for district: ${targetDistrict}`);
-          console.log(`🔧 Available districts:`, getAllDistricts());
-        }
-
-        allSDPOs = districtData.map((location, index) => {
-          const baseScore = Math.random() * 20 + 75;
-
-          return {
-            id: (index + 1).toString(),
-            name: `SDPO ${officerNames[index % officerNames.length]}`,
-            district: targetDistrict,
-            range: location.range,
-            jurisdiction: location.jurisdiction,
-            performance: { 
-              rank: index + 1, 
-              score: Math.round(baseScore * 10) / 10, 
-              grade: getGrade(baseScore) 
-            },
-            metrics: {
-              casesResolved: Math.round((Math.random() * 20 + 75) * 10) / 10,
-              responseTime: Math.round((Math.random() * 5 + 5) * 10) / 10,
-              citizenSatisfaction: Math.round((Math.random() * 1.5 + 3.5) * 10) / 10,
-              inspections: Math.round(Math.random() * 50 + 100),
-              communityMeetings: Math.round(Math.random() * 20 + 10)
-            },
-            trends: Array.from({ length: 6 }, (_, i) => ({
-              month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
-              score: Math.round((Math.random() * 10 + 80) * 10) / 10,
-              cases: Math.round(Math.random() * 80 + 150)
-            }))
-          };
-        });
       }
 
       return allSDPOs;

@@ -2,7 +2,7 @@
 
 ## ✅ Project Status: PHASE 1 COMPLETE
 
-The **Andhra Pradesh Police SDPO Dashboard** frontend application has been successfully implemented and is now running. This comprehensive dashboard provides real-time performance monitoring and analytics for all 106 Sub-Divisional Police Officers (SDPOs) across Andhra Pradesh.
+The **Andhra Pradesh Police SDPO Dashboard** frontend application has been successfully implemented and is now running. This comprehensive dashboard provides real-time performance monitoring and analytics for all 108 Sub-Divisional Police Officers (SDPOs) across Andhra Pradesh.
 
 ---
 

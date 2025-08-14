@@ -9,7 +9,7 @@ The `policeDataService.ts` provides centralized access to AP Police organization
 - ✅ **5 Ranges**: Visakhapatnam, Eluru, Guntur, Kurnool, Ananthapuramu
 - ✅ **2 Commissionerates**: Visakhapatnam City, Vijayawada City
 - ✅ **26 Districts**: All official districts from subdivision_list.txt
-- ✅ **106 SDPO Subdivisions**: Complete mapping with jurisdiction names
+- ✅ **108 SDPO Subdivisions**: Complete mapping with jurisdiction names
 
 ### 2. **Dynamic User Jurisdiction Resolution**
 - ✅ **Smart SP Mapping**: Automatically resolves SP jurisdiction to correct district
@@ -50,7 +50,7 @@ import { isValidDistrict, getTotalSDPOCount } from '../services/policeDataServic
 const isValid = isValidDistrict('Eluru'); // Returns: true
 
 // Get total SDPO count
-const total = getTotalSDPOCount(); // Returns: 106
+const total = getTotalSDPOCount(); // Returns: 108
 ```
 
 ## Usage Examples

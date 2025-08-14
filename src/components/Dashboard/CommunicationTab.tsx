@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import CommunicationService, { Task, Message, Officer } from '../../services/communicationService';
+import {
+  CommunicationService,
+  Task,
+  Message
+} from '../../services/communicationService';
 import TaskAssignmentModal from './TaskAssignmentModal';
 import MessageBroadcastModal from './MessageBroadcastModal';
 
@@ -27,11 +31,11 @@ const CommunicationTab: React.FC<CommunicationTabProps> = ({ userRole, userId = 
     setStatistics(CommunicationService.getStatistics());
   };
 
-  const handleTaskCreated = (task: Task) => {
+  const handleTaskCreated = (_task: Task) => {
     loadData(); // Reload data after task creation
   };
 
-  const handleMessageSent = (message: Message) => {
+  const handleMessageSent = (_message: Message) => {
     loadData(); // Reload data after message sent
   };
 

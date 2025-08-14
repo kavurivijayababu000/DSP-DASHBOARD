@@ -1,6 +1,5 @@
 import { 
   getAllDistricts, 
-  getAllRanges, 
   getActualRanges,
   getSDPOsForDistrict,
   apPoliceStructure 

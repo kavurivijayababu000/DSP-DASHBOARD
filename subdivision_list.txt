@@ -2,7 +2,7 @@
 
 ## 📖 Project Overview
 
-The **Andhra Pradesh Police SDPO Dashboard** is a comprehensive, real-time performance monitoring and analytics platform designed to enhance governance, accountability, and decision-making across all 108 Sub-Divisional Police Officers (SDPOs) in the state. This unified platform serves multiple hierarchical roles from DGP to individual SDPOs across 26 districts, 5 ranges, and 2 commissionerates.
+The **Andhra Pradesh Police SDPO Dashboard** is a comprehensive, real-time performance monitoring and analytics platform designed to enhance governance, accountability, and decision-making across all 106 Sub-Divisional Police Officers (SDPOs) in the state. This unified platform serves multiple hierarchical roles from DGP to individual SDPOs across 26 districts, 5 ranges, and 2 commissionerates.
 
 ### 🎯 Core Objectives
 
@@ -20,7 +20,7 @@ The **Andhra Pradesh Police SDPO Dashboard** is a comprehensive, real-time perfo
 DGP (State Level)
 ├── DIGs (5 Ranges)
 │   ├── SPs (24 Districts)
-│   │   └── SDPOs (108 Subdivisions)
+│   │   └── SDPOs (106 Subdivisions)
 │   └── Commissionerates (2)
 │       └── SDPO Zones (City Level)
 ```
@@ -59,7 +59,7 @@ DGP (State Level)
 - **ANANTHAPURAMU**: Anantapur Urban, Anantapur Rural, Guntakal, Kalyanadurgam, Tadipatri
 - **SRI SATYA SAI**: Dharmavaram, Kadiri, Penukonda, Puttaparthi, Hindupur
 - **CHITTOOR**: Chittoor, Palamaner, Nagari, Kuppam
-- **TIRUPATI**: Tirupati, Chandragiri, Renigunta, Srikalahasti, Puttur, Gudur, Naidupeta, Tirumala L&O, Sricity
+- **TIRUPATI**: Tirupati, Chandragiri, Renigunta, Srikalahasti, Puttur, Gudur, Naidupeta
 
 #### 🏙️ COMMISSIONERATES
 - **VISAKHAPATNAM CITY**: Visakha East, Dwaraka, Visakha North, Visakha Harbour, Visakha South, Visakha West
@@ -73,7 +73,7 @@ DGP (State Level)
 **Scope**: Entire State of Andhra Pradesh
 
 **Key Features**:
-- 📊 Live KPIs across all 108 SDPOs
+- 📊 Live KPIs across all 106 SDPOs
 - 🗺️ Interactive state-wide performance map
 - 📈 Comparative analytics between ranges, districts, and commissionerates
 - 🚨 Alert system for high-priority cases and performance deviations

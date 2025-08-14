@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { KPIMetric } from '../../store/slices/dashboardSlice';
 
 interface KPICardProps {
   kpi: KPIMetric;
 }
 
-const KPICard: React.FC<KPICardProps> = ({ kpi }) => {
+const KPICard: React.FC<KPICardProps> = memo(({ kpi }) => {
   const getTrendIcon = () => {
     switch (kpi.trend) {
       case 'up':
@@ -69,6 +69,8 @@ const KPICard: React.FC<KPICardProps> = ({ kpi }) => {
       </div>
     </div>
   );
-};
+});
+
+KPICard.displayName = 'KPICard';
 
 export default KPICard;

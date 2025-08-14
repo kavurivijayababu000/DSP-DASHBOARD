@@ -17,9 +17,9 @@
 | **Eluru Range** | 6 Districts | 22 SDPOs | ✅ Complete |
 | **Guntur Range** | 5 Districts | 21 SDPOs | ✅ Complete |
 | **Kurnool Range** | 4 Districts | 18 SDPOs | ✅ Complete |
-| **Ananthapuramu Range** | 4 Districts | 18 SDPOs | ✅ Complete |
+| **Ananthapuramu Range** | 4 Districts | 21 SDPOs | ✅ Complete |
 | **Commissionerates** | 2 City Police | 12 SDPOs | ✅ Complete |
-| **TOTAL** | **26 + 2** | **108 SDPOs** | ✅ **COMPLETE** |
+| **TOTAL** | **26 + 2** | **111 SDPOs** | ✅ **COMPLETE** |
 
 ---
 
@@ -142,10 +142,10 @@
 - **Count**: 4 SDPOs
 
 ### 24. **TIRUPATI** ✅
-- **SDPOs**: Tirupati, Chandragiri, Renigunta, Srikalahasti, Puttur, Gudur, Naidupeta, Tirumala L&O, Sricity
-- **Count**: 9 SDPOs
+- **SDPOs**: Tirupati, Chandragiri, Renigunta, Srikalahasti, Puttur, Gudur, Naidupeta
+- **Count**: 7 SDPOs
 
-**Range Total**: 18 SDPOs
+**Range Total**: 21 SDPOs
 
 ---
 

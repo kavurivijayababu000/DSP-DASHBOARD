@@ -1,15 +1,162 @@
 {
-  "short_name": "AP Police SDPO",
-  "name": "Andhra Pradesh Police SDPO Dashboard",
+  "name": "SDPO Dashboard - Andhra Pradesh Police",
+  "short_name": "SDPO Dashboard",
+  "description": "Sub-Divisional Police Officer Management Dashboard for Andhra Pradesh Police Department",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "theme_color": "#1e40af",
+  "background_color": "#ffffff",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["government", "productivity", "utilities"],
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/ApNewMap.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ApNewMap.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ApNewMap_clean.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "monochrome"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SDPO Dashboard - Crime Management & Analytics"
+    },
+    {
+      "src": "/screenshots/dashboard-mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile SDPO Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Crime Reports",
+      "short_name": "Crimes",
+      "url": "/dashboard?tab=crime",
+      "description": "View and manage crime reports",
+      "icons": [
+        {
+          "src": "/ApNewMap_clean.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Performance Analytics",
+      "short_name": "Analytics",
+      "url": "/dashboard?tab=analytics",
+      "description": "View performance metrics and analytics",
+      "icons": [
+        {
+          "src": "/ApNewMap_clean.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Emergency Contact",
+      "short_name": "Emergency",
+      "url": "/emergency",
+      "description": "Quick access to emergency contacts and protocols",
+      "icons": [
+        {
+          "src": "/ApNewMap_clean.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "File Upload",
+      "short_name": "Upload",
+      "url": "/dashboard?tab=files",
+      "description": "Upload documents and files",
+      "icons": [
+        {
+          "src": "/ApNewMap_clean.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=gov.ap.police.sdpo",
+      "id": "gov.ap.police.sdpo"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "capture_links": "existing-client-navigate",
+  "protocol_handlers": [
+    {
+      "protocol": "web+sdpo",
+      "url": "/handle?protocol=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/file-handler",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "image/*": [".jpg", ".jpeg", ".png", ".gif"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "text/plain": [".txt"]
+      },
+      "icons": [
+        {
+          "src": "/ApNewMap_clean.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "application/pdf", ".docx", ".txt"]
+        }
+      ]
+    }
+  }
 }
